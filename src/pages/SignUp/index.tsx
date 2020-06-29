@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useRef, useCallback } from 'react';
 import {
   Image,
   View,
@@ -8,6 +8,8 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
+import { Form } from '@unform/mobile';
+import { FormHandles } from '@unform/core';
 
 import Input from '../../components/Input';
 import Button from '../../components/Button';
@@ -22,7 +24,13 @@ import {
 } from './styles';
 
 const SignUp: React.FC = () => {
+  const formRef = useRef<FormHandles>(null);
+
   const navigation = useNavigation();
+
+  const handleSignUp = useCallback((data: object) => {
+    console.log(data);
+  }, []);
 
   return (
     <>
@@ -40,16 +48,18 @@ const SignUp: React.FC = () => {
             <View>
               <Title>Create an account</Title>
             </View>
-            <Input name="user" icon="user" placeholder="Your name" />
-            <Input name="email" icon="mail" placeholder="E-mail" />
-            <Input name="password" icon="lock" placeholder="Password" />
-            <Button
-              onPress={() => {
-                console.log('test');
-              }}
+            <Form
+              ref={formRef}
+              onSubmit={handleSignUp}
+              style={{ width: '100%' }}
             >
-              SignUp
-            </Button>
+              <Input name="user" icon="user" placeholder="Your name" />
+              <Input name="email" icon="mail" placeholder="E-mail" />
+              <Input name="password" icon="lock" placeholder="Password" />
+              <Button onPress={() => formRef.current?.submitForm()}>
+                SignUp
+              </Button>
+            </Form>
           </Container>
         </ScrollView>
         <BackToSignInButton onPress={() => navigation.goBack()}>
