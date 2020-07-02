@@ -6,11 +6,15 @@ import {
   KeyboardAvoidingView,
   Platform,
   TextInput,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
 import { Form } from '@unform/mobile';
 import { FormHandles } from '@unform/core';
+import * as Yup from 'yup';
+
+import getValidationErrors from '../../utils/getValidationErrors';
 
 import Input from '../../components/Input';
 import Button from '../../components/Button';
@@ -24,17 +28,59 @@ import {
   BackToSignInButtonText,
 } from './styles';
 
+interface SignUpFormData {
+  name: string;
+  email: string;
+  password: string;
+}
+
 const SignUp: React.FC = () => {
   const formRef = useRef<FormHandles>(null);
 
   const navigation = useNavigation();
 
-  const handleSignUp = useCallback((data: object) => {
-    console.log(data);
-  }, []);
-
   const emailInputRef = useRef<TextInput>(null);
   const passwordInputRef = useRef<TextInput>(null);
+
+  const handleSignUp = useCallback(async (data: SignUpFormData) => {
+    try {
+      formRef.current?.setErrors({});
+
+      const schema = Yup.object().shape({
+        name: Yup.string().required('Name is required'),
+        email: Yup.string()
+          .required('Email is required')
+          .email('Use a valid mail'),
+        password: Yup.string().min(6, 'Minimun 6 characters'),
+      });
+
+      await schema.validate(data, {
+        abortEarly: false,
+      });
+
+      // await api.post('/users', data);
+
+      // history.push('/');
+
+      /* Alert.alert(
+          'Registration success',
+          `Now, you can login with your credentials, ${data.name}`,
+        ); */
+    } catch (error) {
+      if (error instanceof Yup.ValidationError) {
+        const errors = getValidationErrors(error);
+
+        formRef.current?.setErrors(errors);
+
+        return;
+      }
+
+      Alert.alert(
+        'Registration error',
+        'Could not register on GoBarber, check the credentials',
+      );
+    }
+  }, []);
 
   return (
     <>
@@ -59,11 +105,14 @@ const SignUp: React.FC = () => {
             >
               <Input
                 autoCapitalize="words"
-                name="user"
+                name="name"
                 icon="user"
                 placeholder="Your name"
                 returnKeyType="next"
-                onSubmitEditing={() => emailInputRef.current?.focus()}
+                onSubmitEditing={() => {
+                  formRef.current?.submitForm();
+                  emailInputRef.current?.focus();
+                }}
               />
               <Input
                 ref={emailInputRef}
@@ -74,7 +123,10 @@ const SignUp: React.FC = () => {
                 icon="mail"
                 placeholder="E-mail"
                 returnKeyType="next"
-                onSubmitEditing={() => passwordInputRef.current?.focus()}
+                onSubmitEditing={() => {
+                  formRef.current?.submitForm();
+                  passwordInputRef.current?.focus();
+                }}
               />
               <Input
                 ref={passwordInputRef}

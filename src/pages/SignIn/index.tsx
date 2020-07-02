@@ -6,11 +6,15 @@ import {
   KeyboardAvoidingView,
   Platform,
   TextInput,
+  Alert,
 } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { useNavigation } from '@react-navigation/native';
 import { Form } from '@unform/mobile';
 import { FormHandles } from '@unform/core';
+import * as Yup from 'yup';
+
+import getValidationErrors from '../../utils/getValidationErrors';
 
 import Input from '../../components/Input';
 import Button from '../../components/Button';
@@ -26,13 +30,48 @@ import {
   CreateAccountButtonText,
 } from './styles';
 
+interface registerData {
+  email: string;
+  password: string;
+}
+
 const SignIn: React.FC = () => {
   const formRef = useRef<FormHandles>(null);
   const passwordInputRef = useRef<TextInput>(null);
   const navigation = useNavigation();
 
-  const handleSingIn = useCallback((data: object) => {
-    console.log(data);
+  const handleSigIn = useCallback(async (SignInData: registerData) => {
+    try {
+      formRef.current?.setErrors({});
+
+      const schema = Yup.object().shape({
+        email: Yup.string()
+          .required('Email is required')
+          .email('Invalid e-mail'),
+        password: Yup.string().required('Password is required'),
+      });
+
+      await schema.validate(SignInData, {
+        abortEarly: false,
+      });
+
+      // await signIn(SignInData);
+
+      // history.push('/dashboard');
+    } catch (error) {
+      if (error instanceof Yup.ValidationError) {
+        const errors = getValidationErrors(error);
+
+        formRef.current?.setErrors(errors);
+
+        return;
+      }
+
+      Alert.alert(
+        'Athentitaction error',
+        'Could not login to the application, check the credentials',
+      );
+    }
   }, []);
 
   return (
@@ -54,7 +93,7 @@ const SignIn: React.FC = () => {
 
             <Form
               ref={formRef}
-              onSubmit={handleSingIn}
+              onSubmit={handleSigIn}
               style={{ width: '100%' }}
             >
               <Input
@@ -66,6 +105,7 @@ const SignIn: React.FC = () => {
                 placeholder="E-mail"
                 returnKeyType="next"
                 onSubmitEditing={() => {
+                  formRef.current?.submitForm();
                   passwordInputRef.current?.focus();
                 }}
               />
