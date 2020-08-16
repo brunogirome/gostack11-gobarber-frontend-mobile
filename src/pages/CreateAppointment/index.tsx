@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
-import { Platform } from 'react-native';
+import { Platform, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/Feather';
 import { format } from 'date-fns';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -30,6 +30,8 @@ import {
   Hour,
   SectionContent,
   Content,
+  CreateAppointmentButton,
+  CreateAppointmentButtonText,
 } from './styles';
 
 import { useAuth } from '../../hooks/auth';
@@ -52,7 +54,7 @@ interface AvailabilityItem {
 const CreateAppointment: React.FC = () => {
   const { user } = useAuth();
   const route = useRoute();
-  const { goBack } = useNavigation();
+  const { goBack, navigate } = useNavigation();
 
   const routeParams = route.params as RouteParams;
 
@@ -98,6 +100,7 @@ const CreateAppointment: React.FC = () => {
   }, []);
 
   const handleSelectHour = useCallback((hour: number) => {
+    console.log(`Hour clicked: ${hour}`);
     setSelectedHour(hour);
   }, []);
 
@@ -111,6 +114,31 @@ const CreateAppointment: React.FC = () => {
     },
     [],
   );
+
+  const handleCreateAppointment = useCallback(async () => {
+    try {
+      const date = new Date(selectedDate);
+
+      console.log(`Selected Hour: ${selectedHour}`);
+
+      date.setHours(selectedHour);
+      date.setMinutes(0);
+
+      console.log(`The date: ${date}`);
+
+      await api.post('appointments', {
+        provider_id: selectedProvider,
+        date,
+      });
+
+      navigate('AppointmentCreated', { date: date.getTime() });
+    } catch (error) {
+      Alert.alert(
+        'Error while creating appointment',
+        "There's an error for create this appointment, please try again.",
+      );
+    }
+  }, [navigate, selectedDate, selectedHour, selectedProvider]);
 
   const morningAvailability = useMemo(() => {
     return availability
@@ -226,6 +254,12 @@ const CreateAppointment: React.FC = () => {
             </SectionContent>
           </Section>
         </Schedule>
+
+        <CreateAppointmentButton onPress={handleCreateAppointment}>
+          <CreateAppointmentButtonText>
+            Create a schedule
+          </CreateAppointmentButtonText>
+        </CreateAppointmentButton>
       </Content>
     </Container>
   );
